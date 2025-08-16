@@ -61,12 +61,12 @@
   </div>
 
   <script>
-    // 显示文字用中文，颜色仍用英文做渲染
-    const words = ["红色","蓝色","绿色","黄色","黑色","紫色","橙色"];
-    const colorKeys = ["red","blue","green","yellow","black","purple","orange"];
+    // 去掉黄色
+    const words = ["红色","蓝色","绿色","黑色","紫色","橙色"];
+    const colorKeys = ["red","blue","green","black","purple","orange"];
     const map = {
       "红色":"red","蓝色":"blue","绿色":"green",
-      "黄色":"yellow","黑色":"black","紫色":"purple","橙色":"orange"
+      "黑色":"black","紫色":"purple","橙色":"orange"
     };
 
     let score=0, round=0, timeLeft=60, timer=null, correctAnswer=null;
@@ -76,8 +76,8 @@
       const colorKey = colorKeys[Math.floor(Math.random()*colorKeys.length)];
       correctAnswer = (map[word]===colorKey);
       const box=document.getElementById("wordBox");
-      box.textContent=word;   // 显示中文
-      box.style.color=colorKey; // 用英文颜色键上色
+      box.textContent=word;
+      box.style.color=colorKey;
     }
 
     function startGame(){
