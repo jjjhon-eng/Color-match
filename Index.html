@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Color Match 顏色配對</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, "PingFang TC", "Heiti TC", sans-serif;
+      background: #f6f7fb;
+      color: #222;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .app {
+      width: min(720px, 95vw);
+      background: white;
+      padding: 20px;
+      border-radius: 18px;
+      box-shadow: 0 8px 24px rgba(0,0,0,.08);
+      text-align: center;
+    }
+    h1 { margin: 8px 0 12px; font-size: 24px; }
+    .meta { display: flex; justify-content: space-around; margin: 10px 0; }
+    .pill { background: #f0f2f7; border-radius: 999px; padding: 6px 12px; font-weight: 600; }
+    .card { margin: 20px 0; padding: 30px 16px; border-radius: 16px; border: 2px solid #e9ecf4; }
+    #word { font-size: 48px; font-weight: 800; }
+    .buttons { display: flex; justify-content: space-around; margin-top: 10px; }
+    button {
+      border: none; border-radius: 12px; padding: 14px 20px;
+      font-size: 20px; font-weight: 700; cursor: pointer;
+    }
+    .yes { background: #eaf8ef; color: #0a7a3f; }
+    .no  { background: #fff1f1; color: #b00020; }
+    .start { background: #1a73e8; color: #fff; width: 100%; margin-top: 10px; }
+    .muted { color: #667085; font-size: 13px; margin-top: 12px; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>Color Match 顏色配對</h1>
+    <div class="meta">
+      <div class="pill">時間：<span id="time">60</span>s</div>
+      <div class="pill">得分：<span id="score">0</span></div>
+      <div class="pill">回合：<span id="round">0</span></div>
+    </div>
+
+    <div class="card">
+      <div id="word">準備好了嗎？</div>
+    </div>
+
+    <div class="buttons">
+      <button id="btnYes" class="yes" disabled onclick="check(true)">一致</button>
+      <button id="btnNo" class="no" disabled onclick="check(false)">不一致</button>
+    </div>
+
+    <button id="btnStart" class="start" onclick="startGame()">開始遊戲</button>
+    <div class="muted">規則：判斷「文字內容」與「顏色」是否一致。快速答題可拿高分！</div>
+  </div>
+
+<script>
+  const COLORS = ["red", "blue", "green", "yellow", "black", "purple", "orange"];
+  const colorToCss = {
+    red: "red", blue: "royalblue", green: "seagreen",
+    yellow: "goldenrod", black: "#111", purple: "rebeccapurple", orange: "orange"
+  };
+
+  let running = false, score = 0, round = 0, timeLeft = 60, timerId = null;
+
+  const wordEl  = document.getElementById("word");
+  const timeEl  = document.getElementById("time");
+  const scoreEl = document.getElementById("score");
+  const roundEl = document.getElementById("round");
+  const btnYes  = document.getElementById("btnYes");
+  const btnNo   = document.getElementById("btnNo");
+  const btnStart= document.getElementById("btnStart");
+
+  function rand(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+
+  function newRound() {
+    const wordName = rand(COLORS);
+    const colorName = rand(COLORS);
+    wordEl.textContent = wordName;
+    wordEl.style.color = colorToCss[colorName];
+    round += 1; roundEl.textContent = round;
+  }
+
+  function setButtonsEnabled(enabled) {
+    btnYes.disabled = !enabled; btnNo.disabled = !enabled;
+  }
+
+  function startGame() {
+    if (running) return;
+    running = true;
+    score = 0; round = 0; timeLeft = 60;
+    scoreEl.textContent = score;
+    timeEl.textContent = timeLeft;
+    btnStart.textContent = "進行中…";
+    btnStart.disabled = true;
+    setButtonsEnabled(true);
+    newRound();
+    timerId = setInterval(() => {
+      timeLeft -= 1; timeEl.textContent = timeLeft;
+      if (timeLeft <= 0) endGame();
+    }, 1000);
+  }
+
+  function endGame() {
+    running = false;
+    clearInterval(timerId);
+    setButtonsEnabled(false);
+    btnStart.disabled = false;
+    btnStart.textContent = "再玩一次";
+    wordEl.textContent = `時間到！最終得分：${score}`;
+    wordEl.style.color = "#222";
+  }
+
+  function check(isMatch) {
+    if (!running) return;
+    const css = wordEl.style.color.replace(/\s/g,'');
+    const currentColorName = Object.keys(colorToCss).find(k => colorToCss[k].replace(/\s/g,'') === css);
+    const actualMatch = (wordEl.textContent.toLowerCase() === currentColorName);
+    if (isMatch === actualMatch) { score += 10; } else { score = Math.max(0, score - 5); }
+    scoreEl.textContent = score;
+    newRound();
+  }
+</script>
+</body>
+</html>
