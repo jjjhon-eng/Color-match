@@ -61,6 +61,7 @@
   </div>
 
   <script>
+    // 显示文字用中文，颜色仍用英文做渲染
     const words = ["红色","蓝色","绿色","黄色","黑色","紫色","橙色"];
     const colorKeys = ["red","blue","green","yellow","black","purple","orange"];
     const map = {
@@ -75,8 +76,8 @@
       const colorKey = colorKeys[Math.floor(Math.random()*colorKeys.length)];
       correctAnswer = (map[word]===colorKey);
       const box=document.getElementById("wordBox");
-      box.textContent=word;
-      box.style.color=colorKey;
+      box.textContent=word;   // 显示中文
+      box.style.color=colorKey; // 用英文颜色键上色
     }
 
     function startGame(){
