@@ -1,132 +1,153 @@
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Color Match 顏色配對</title>
   <style>
     body {
       margin: 0;
-      font-family: Arial, "PingFang TC", "Heiti TC", sans-serif;
-      background: #f6f7fb;
-      color: #222;
+      font-family: Arial, sans-serif;
+      background: #f7f7f7;
       display: flex;
-      align-items: center;
       justify-content: center;
+      align-items: center;
       height: 100vh;
     }
     .app {
       width: min(720px, 95vw);
-      background: white;
-      padding: 20px;
-      border-radius: 18px;
-      box-shadow: 0 8px 24px rgba(0,0,0,.08);
+      background: #fff;
+      border-radius: 15px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
       text-align: center;
+      padding: 20px;
     }
-    h1 { margin: 8px 0 12px; font-size: 24px; }
-    .meta { display: flex; justify-content: space-around; margin: 10px 0; }
-    .pill { background: #f0f2f7; border-radius: 999px; padding: 6px 12px; font-weight: 600; }
-    .card { margin: 20px 0; padding: 30px 16px; border-radius: 16px; border: 2px solid #e9ecf4; }
-    #word { font-size: 48px; font-weight: 800; }
-    .buttons { display: flex; justify-content: space-around; margin-top: 10px; }
+    h1 {
+      margin-bottom: 10px;
+    }
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+    }
+    .stats div {
+      background: #f0f0f0;
+      padding: 10px 15px;
+      border-radius: 10px;
+      font-weight: bold;
+    }
+    .word-box {
+      font-size: 42px;
+      font-weight: bold;
+      margin: 30px 0;
+      min-height: 60px;
+    }
+    .buttons {
+      display: flex;
+      justify-content: space-around;
+      margin: 20px 0;
+    }
     button {
-      border: none; border-radius: 12px; padding: 14px 20px;
-      font-size: 20px; font-weight: 700; cursor: pointer;
+      flex: 1;
+      margin: 0 10px;
+      padding: 15px;
+      font-size: 18px;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
     }
-    .yes { background: #eaf8ef; color: #0a7a3f; }
-    .no  { background: #fff1f1; color: #b00020; }
-    .start { background: #1a73e8; color: #fff; width: 100%; margin-top: 10px; }
-    .muted { color: #667085; font-size: 13px; margin-top: 12px; }
+    .yes {
+      background: #d4f7d4;
+      color: #006600;
+    }
+    .no {
+      background: #fddcdc;
+      color: #990000;
+    }
+    .start {
+      background: #007bff;
+      color: #fff;
+    }
+    .rules {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #555;
+    }
   </style>
 </head>
 <body>
   <div class="app">
     <h1>Color Match 顏色配對</h1>
-    <div class="meta">
-      <div class="pill">時間：<span id="time">60</span>s</div>
-      <div class="pill">得分：<span id="score">0</span></div>
-      <div class="pill">回合：<span id="round">0</span></div>
+    <div class="stats">
+      <div>時間：<span id="time">60</span>s</div>
+      <div>得分：<span id="score">0</span></div>
+      <div>回合：<span id="round">0</span></div>
     </div>
-
-    <div class="card">
-      <div id="word">準備好了嗎？</div>
-    </div>
-
+    <div class="word-box" id="wordBox">準備好了嗎？</div>
     <div class="buttons">
-      <button id="btnYes" class="yes" disabled onclick="check(true)">一致</button>
-      <button id="btnNo" class="no" disabled onclick="check(false)">不一致</button>
+      <button class="yes" onclick="checkAnswer(true)">一致</button>
+      <button class="no" onclick="checkAnswer(false)">不一致</button>
     </div>
-
-    <button id="btnStart" class="start" onclick="startGame()">開始遊戲</button>
-    <div class="muted">規則：判斷「文字內容」與「顏色」是否一致。快速答題可拿高分！</div>
+    <button class="start" onclick="startGame()">開始遊戲</button>
+    <div class="rules">規則：判斷「文字內容」與「文字顏色」是否一致。快速答題可拿高分！</div>
   </div>
 
-<script>
-  const COLORS = ["red", "blue", "green", "yellow", "black", "purple", "orange"];
-  const colorToCss = {
-    red: "red", blue: "royalblue", green: "seagreen",
-    yellow: "goldenrod", black: "#111", purple: "rebeccapurple", orange: "orange"
-  };
+  <script>
+    const colors = ["red", "blue", "green", "orange", "purple", "black"];
+    let score = 0;
+    let round = 0;
+    let timeLeft = 60;
+    let timer;
+    let correctAnswer = null;
 
-  let running = false, score = 0, round = 0, timeLeft = 60, timerId = null;
+    function randomWord() {
+      const word = colors[Math.floor(Math.random() * colors.length)];
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      correctAnswer = (word === color);
+      const wordBox = document.getElementById("wordBox");
+      wordBox.textContent = word;
+      wordBox.style.color = color;
+    }
 
-  const wordEl  = document.getElementById("word");
-  const timeEl  = document.getElementById("time");
-  const scoreEl = document.getElementById("score");
-  const roundEl = document.getElementById("round");
-  const btnYes  = document.getElementById("btnYes");
-  const btnNo   = document.getElementById("btnNo");
-  const btnStart= document.getElementById("btnStart");
+    function startGame() {
+      score = 0;
+      round = 0;
+      timeLeft = 60;
+      document.getElementById("score").textContent = score;
+      document.getElementById("round").textContent = round;
+      document.getElementById("time").textContent = timeLeft;
+      document.getElementById("wordBox").textContent = "開始囉！";
 
-  function rand(arr){ return arr[Math.floor(Math.random() * arr.length)]; }
+      clearInterval(timer);
+      timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById("time").textContent = timeLeft;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          document.getElementById("wordBox").textContent = `遊戲結束！你的分數是 ${score}`;
+        }
+      }, 1000);
 
-  function newRound() {
-    const wordName = rand(COLORS);
-    const colorName = rand(COLORS);
-    wordEl.textContent = wordName;
-    wordEl.style.color = colorToCss[colorName];
-    round += 1; roundEl.textContent = round;
-  }
+      nextRound();
+    }
 
-  function setButtonsEnabled(enabled) {
-    btnYes.disabled = !enabled; btnNo.disabled = !enabled;
-  }
+    function nextRound() {
+      round++;
+      document.getElementById("round").textContent = round;
+      randomWord();
+    }
 
-  function startGame() {
-    if (running) return;
-    running = true;
-    score = 0; round = 0; timeLeft = 60;
-    scoreEl.textContent = score;
-    timeEl.textContent = timeLeft;
-    btnStart.textContent = "進行中…";
-    btnStart.disabled = true;
-    setButtonsEnabled(true);
-    newRound();
-    timerId = setInterval(() => {
-      timeLeft -= 1; timeEl.textContent = timeLeft;
-      if (timeLeft <= 0) endGame();
-    }, 1000);
-  }
-
-  function endGame() {
-    running = false;
-    clearInterval(timerId);
-    setButtonsEnabled(false);
-    btnStart.disabled = false;
-    btnStart.textContent = "再玩一次";
-    wordEl.textContent = `時間到！最終得分：${score}`;
-    wordEl.style.color = "#222";
-  }
-
-  function check(isMatch) {
-    if (!running) return;
-    const css = wordEl.style.color.replace(/\s/g,'');
-    const currentColorName = Object.keys(colorToCss).find(k => colorToCss[k].replace(/\s/g,'') === css);
-    const actualMatch = (wordEl.textContent.toLowerCase() === currentColorName);
-    if (isMatch === actualMatch) { score += 10; } else { score = Math.max(0, score - 5); }
-    scoreEl.textContent = score;
-    newRound();
-  }
-</script>
+    function checkAnswer(answer) {
+      if (timeLeft <= 0) return;
+      if (answer === correctAnswer) {
+        score += 10; no
+      } else {
+        score -= 5;
+      }
+      document.getElementById("score").textContent = score;
+      nextRound();
+    }
+  </script>
 </body>
 </html>
