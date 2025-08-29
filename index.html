@@ -1,18 +1,21 @@
 <!DOCTYPE html>
-<html lang="zh-Hans">
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>颜色配对</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>顏色配對遊戲</title>
   <style>
     body {
       margin: 0;
-      font-family: Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+      font-family: Arial, sans-serif;
       background: #f7f7f7;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
+      -webkit-user-select: none;
+      user-select: none;
+      touch-action: manipulation;
     }
     .app {
       width: min(720px, 95vw);
@@ -22,94 +25,98 @@
       text-align: center;
       padding: 20px;
     }
-    h1 { margin-bottom: 10px; }
-    .stats {
-      display: flex; justify-content: space-around; margin-bottom: 20px;
+    h1 {
+      margin-bottom: 10px;
     }
-    .stats div {
-      background: #f0f0f0; padding: 10px 15px; border-radius: 10px; font-weight: bold;
+    .color-box {
+      font-size: 2rem;
+      margin: 20px 0;
+      font-weight: bold;
     }
-    .word-box {
-      font-size: 42px; font-weight: bold; margin: 30px 0; min-height: 60px;
-    }
-    .buttons { display: flex; justify-content: space-around; margin: 20px 0; }
     button {
-      flex: 1; margin: 0 10px; padding: 15px; font-size: 18px; border: none;
-      border-radius: 10px; cursor: pointer; font-weight: bold;
+      font-size: 1.2rem;
+      margin: 10px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
     }
-    .yes { background: #d4f7d4; color: #006600; }
-    .no  { background: #fddcdc; color: #990000; }
-    .start { background: #007bff; color: #fff; }
-    .rules { margin-top: 20px; font-size: 14px; color: #555; }
+    .score {
+      margin-top: 20px;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
   <div class="app">
-    <h1>颜色配对</h1>
-    <div class="stats">
-      <div>时间：<span id="time">60</span>s</div>
-      <div>得分：<span id="score">0</span></div>
-      <div>回合：<span id="round">0</span></div>
+    <h1>顏色配對遊戲</h1>
+    <div id="colorBox" class="color-box">紅色</div>
+    <div>
+      <button onclick="checkAnswer(true)">一致</button>
+      <button onclick="checkAnswer(false)">不一致</button>
     </div>
-    <div class="word-box" id="wordBox">准备好了吗？</div>
-    <div class="buttons">
-      <button class="yes" onclick="checkAnswer(true)">一致</button>
-      <button class="no" onclick="checkAnswer(false)">不一致</button>
-    </div>
-    <button class="start" onclick="startGame()">开始游戏</button>
-    <div class="rules">规则：判断“文字内容”和“文字颜色”是否一致。答对 +10 分，答错 −5 分。</div>
+    <div class="score">分數：<span id="score">0</span></div>
+    <div id="timer">剩餘時間：60 秒</div>
   </div>
 
   <script>
-    // 去掉黄色
-    const words = ["红色","蓝色","绿色","黑色","紫色","橙色"];
-    const colorKeys = ["red","blue","green","black","purple","orange"];
-    const map = {
-      "红色":"red","蓝色":"blue","绿色":"green",
-      "黑色":"black","紫色":"purple","橙色":"orange"
-    };
+    // 禁止雙擊縮放
+    document.addEventListener('dblclick', e => e.preventDefault());
+    document.addEventListener('gesturestart', e => e.preventDefault());
 
-    let score=0, round=0, timeLeft=60, timer=null, correctAnswer=null;
+    const colors = [
+      {name: "紅色", css: "red"},
+      {name: "藍色", css: "blue"},
+      {name: "綠色", css: "green"},
+      {name: "紫色", css: "purple"}
+    ];
 
-    function randomWord(){
-      const word = words[Math.floor(Math.random()*words.length)];
-      const colorKey = colorKeys[Math.floor(Math.random()*colorKeys.length)];
-      correctAnswer = (map[word]===colorKey);
-      const box=document.getElementById("wordBox");
-      box.textContent=word;
-      box.style.color=colorKey;
+    let score = 0;
+    let timeLeft = 60;
+    let correctAnswer = true;
+
+    function newQuestion() {
+      const textColor = colors[Math.floor(Math.random() * colors.length)];
+      const showCorrect = Math.random() < 0.5; // 一半正確，一半錯誤
+      let wordColor;
+      if (showCorrect) {
+        wordColor = textColor;
+        correctAnswer = true;
+      } else {
+        // 隨機找不同顏色
+        const others = colors.filter(c => c !== textColor);
+        wordColor = others[Math.floor(Math.random() * others.length)];
+        correctAnswer = false;
+      }
+      const box = document.getElementById("colorBox");
+      box.textContent = textColor.name;
+      box.style.color = wordColor.css;
     }
 
-    function startGame(){
-      score=0; round=0; timeLeft=60;
-      document.getElementById("score").textContent=score;
-      document.getElementById("round").textContent=round;
-      document.getElementById("time").textContent=timeLeft;
-      clearInterval(timer);
-      timer=setInterval(()=>{
+    function checkAnswer(answer) {
+      if (answer === correctAnswer) {
+        score += 10;
+      } else {
+        score -= 10;
+      }
+      document.getElementById("score").textContent = score;
+      newQuestion();
+    }
+
+    function startGame() {
+      newQuestion();
+      const timer = setInterval(() => {
         timeLeft--;
-        document.getElementById("time").textContent=timeLeft;
-        if(timeLeft<=0){
+        document.getElementById("timer").textContent = "剩餘時間：" + timeLeft + " 秒";
+        if (timeLeft <= 0) {
           clearInterval(timer);
-          document.getElementById("wordBox").textContent=`游戏结束！最终得分：${score}`;
-          document.getElementById("wordBox").style.color="#000";
+          alert("遊戲結束！總分：" + score);
         }
-      },1000);
-      nextRound();
+      }, 1000);
     }
 
-    function nextRound(){
-      round++;
-      document.getElementById("round").textContent=round;
-      randomWord();
-    }
-
-    function checkAnswer(ans){
-      if(timeLeft<=0) return;
-      if(ans===correctAnswer) score+=10; else score-=5;
-      document.getElementById("score").textContent=score;
-      nextRound();
-    }
+    startGame();
   </script>
 </body>
 </html>
