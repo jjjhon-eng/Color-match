@@ -1,27 +1,47 @@
 <!DOCTYPE html>
-<html lang="zh-Hans">
+<html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover" />
-  <title>颜色配对（公平版）</title>
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1,
+                 user-scalable=no, viewport-fit=cover" />
+  <title>顏色配對（公平版）</title>
   <style>
     :root { --bg:#f6f7fb; --card:#fff; --border:#e9ecf4; --muted:#667085; }
-    html, body { height: 100%; -webkit-text-size-adjust: 100%; }
+
+    /* ① 鎖定頁面：不滾動、不回彈 */
+    html, body {
+      height: 100%;
+      overflow: hidden;           /* 不顯示捲軸 */
+      overscroll-behavior: none;  /* 禁止拉扯回彈 */
+      -webkit-text-size-adjust: 100%;
+    }
+
     body{
       margin:0; background:var(--bg); color:#222;
-      font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Arial,sans-serif;
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,
+                   "PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",Arial,sans-serif;
       display:flex; align-items:center; justify-content:center; min-height:100vh;
-      touch-action: manipulation; -webkit-user-select:none; user-select:none;
+      position: fixed; inset: 0;  /* iOS 防橡皮筋捲動 */
+      touch-action: none;         /* 禁一切觸控滾動手勢 */
+      -webkit-user-select:none; user-select:none;
     }
-    .app{ width:min(720px,95vw); background:var(--card); border-radius:16px; box-shadow:0 8px 24px rgba(0,0,0,.08);
-      padding:20px; text-align:center; }
+
+    .app{
+      width:min(720px,95vw); background:var(--card); border-radius:16px;
+      box-shadow:0 8px 24px rgba(0,0,0,.08);
+      padding:20px; text-align:center;
+    }
     h1{ margin:8px 0 10px; }
     .stats{ display:flex; justify-content:space-around; margin:8px 0 16px; }
     .pill{ background:#eef1f6; padding:8px 14px; border-radius:999px; font-weight:700; }
     .card{ border:2px solid var(--border); border-radius:14px; padding:28px 16px; margin:10px 0 16px; }
     #word{ font-size:48px; font-weight:800; min-height:56px; }
     .btns{ display:flex; gap:12px; }
-    button{ flex:1; border:0; border-radius:12px; padding:14px 16px; font-size:18px; font-weight:800; cursor:pointer; touch-action: manipulation; }
+    button{
+      flex:1; border:0; border-radius:12px; padding:14px 16px;
+      font-size:18px; font-weight:800; cursor:pointer;
+    }
     .yes{ background:#e9f7ed; color:#0a7a3f; }
     .no{  background:#ffe9e9; color:#b00020; }
     .start{ background:#1a73e8; color:#fff; margin-top:12px; width:100%; }
@@ -31,14 +51,15 @@
 </head>
 <body>
   <div class="app">
-    <h1>颜色配对（公平版）</h1>
+    <h1>顏色配對（公平版）</h1>
     <div class="stats">
-      <div class="pill">时间：<span id="time">60</span>s</div>
-      <div class="pill">得分：<span id="score">0</span></div>
+      <div class="pill">時間：<span id="time">60</span>s</div>
+      <div class="pill">分數：<span id="score">0</span></div>
       <div class="pill">回合：<span id="round">0</span></div>
     </div>
+
     <div class="card">
-      <div id="word">点「开始游戏」吧！</div>
+      <div id="word">點「開始遊戲」吧！</div>
     </div>
 
     <div class="btns">
@@ -46,14 +67,14 @@
       <button class="no  disabled" id="btnNo">不一致</button>
     </div>
 
-    <button class="start" id="btnStart">开始游戏</button>
-    <div class="tip">规则：系统尽量确保“对/错 50% : 50%”。答对 +10，答错 −10。倒计时 60 秒。</div>
+    <button class="start" id="btnStart">開始遊戲</button>
+    <div class="tip">規則：系統盡量保持「對/錯 50% : 50%」。答對 +10、答錯 −10。計時 60 秒。</div>
   </div>
 
 <script>
-  // —— 去黄色、中文显示 —— //
-  const WORDS = ['红色','蓝色','绿色','黑色','紫色','橙色'];
-  const keyFromText = { '红色':'red','蓝色':'blue','绿色':'green','黑色':'black','紫色':'purple','橙色':'orange' };
+  // —— 顏色（不含黃色）——
+  const WORDS = ['紅色','藍色','綠色','黑色','紫色','橙色'];
+  const keyFromText = { '紅色':'red','藍色':'blue','綠色':'green','黑色':'black','紫色':'purple','橙色':'orange' };
   const colorKeys = Object.values(keyFromText);
   const cssMap = { red:'red', blue:'royalblue', green:'seagreen', black:'#111', purple:'rebeccapurple', orange:'orange' };
 
@@ -71,12 +92,9 @@
 
   const rand = arr => arr[Math.floor(Math.random()*arr.length)];
   const revMap = Object.fromEntries(Object.entries(keyFromText).map(([cn,en]) => [en, cn]));
+  const enablePlay = en => [btnYes, btnNo].forEach(b => b.classList.toggle('disabled', !en));
 
-  function enablePlay(enable){
-    [btnYes, btnNo].forEach(b => b.classList.toggle('disabled', !enable));
-  }
-
-  // 保持对/错尽量 50/50
+  // 50/50 決策
   function nextShouldMatch(){
     if (matchCount > mismatchCount) return false;
     if (mismatchCount > matchCount) return true;
@@ -107,7 +125,7 @@
     if(running) return;
     running = true; score=0; round=0; timeLeft=60; matchCount=0; mismatchCount=0;
     scoreEl.textContent = score; roundEl.textContent = round; timeEl.textContent = timeLeft;
-    btnStart.textContent = '进行中…'; btnStart.disabled = true; enablePlay(true);
+    btnStart.textContent = '進行中…'; btnStart.disabled = true; enablePlay(true);
     newRound();
     clearInterval(timer);
     timer = setInterval(()=>{
@@ -119,7 +137,7 @@
   function endGame(){
     running=false; clearInterval(timer); enablePlay(false);
     btnStart.disabled=false; btnStart.textContent='再玩一次';
-    wordEl.textContent = `时间到！最终得分：${score}`; wordEl.style.color = '#222';
+    wordEl.textContent = `時間到！最終分數：${score}`; wordEl.style.color = '#222';
   }
 
   function answer(isMatch){
@@ -133,7 +151,7 @@
   btnYes.addEventListener('click', () => answer(true));
   btnNo .addEventListener('click', () => answer(false));
 
-  // —— 防缩放 —— //
+  // —— 防縮放（雙擊/手勢）——
   let lastTouchEnd = 0;
   document.addEventListener('touchend', e => {
     const now = Date.now();
@@ -142,6 +160,11 @@
   }, {passive:false});
   document.addEventListener('dblclick', e => e.preventDefault(), {passive:false});
   document.addEventListener('gesturestart', e => e.preventDefault());
+
+  // —— 多重保險：鎖定滾動與回彈 —— //
+  window.scrollTo(0,0);
+  window.addEventListener('scroll', () => window.scrollTo(0,0), {passive:false});
+  document.addEventListener('touchmove', e => e.preventDefault(), {passive:false});
 </script>
 </body>
 </html>
