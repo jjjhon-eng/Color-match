@@ -5,32 +5,44 @@
   <meta name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1,
                  user-scalable=no, viewport-fit=cover" />
-  <title>顏色配對（公平版）</title>
+  <title>顏色配對（穩定版）</title>
   <style>
-    :root { --bg:#f6f7fb; --card:#fff; --border:#e9ecf4; --muted:#667085; }
-
-    /* ① 鎖定頁面：不滾動、不回彈 */
-    html, body {
-      height: 100%;
-      overflow: hidden;           /* 不顯示捲軸 */
-      overscroll-behavior: none;  /* 禁止拉扯回彈 */
-      -webkit-text-size-adjust: 100%;
+    :root{
+      --bg:#f6f7fb; --card:#fff; --border:#e9ecf4; --muted:#667085;
+      /* JS 會設置 --vh = 真實視口高度(px)；備用 100svh/100dvh */
+      --vh: 100svh;
     }
 
+    /* ① 完全鎖定頁面與高度 */
+    html, body{
+      margin:0;
+      padding:0;
+      overflow:hidden;             /* 不顯示捲軸 */
+      overscroll-behavior:none;    /* 禁止回彈 */
+      -webkit-text-size-adjust:100%;
+      height:100dvh;               /* 新版瀏覽器的穩定視口 */
+      height:var(--vh);            /* 舊版由 JS 注入真實值 */
+    }
+
+    *{ -webkit-tap-highlight-color: transparent; }
     body{
-      margin:0; background:var(--bg); color:#222;
-      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,
-                   "PingFang TC","Microsoft JhengHei","Noto Sans CJK TC",Arial,sans-serif;
-      display:flex; align-items:center; justify-content:center; min-height:100vh;
-      position: fixed; inset: 0;  /* iOS 防橡皮筋捲動 */
-      touch-action: none;         /* 禁一切觸控滾動手勢 */
+      background:var(--bg); color:#222;
+      font-family:-apple-system,BlinkMacSystemFont,"PingFang TC","Microsoft JhengHei",
+                   "Segoe UI",Roboto,Arial,sans-serif;
+      display:flex; align-items:center; justify-content:center;
+      /* 用固定定位撐滿，全局禁止觸控滾動 */
+      position:fixed; inset:0;
+      touch-action:none;
       -webkit-user-select:none; user-select:none;
     }
 
     .app{
-      width:min(720px,95vw); background:var(--card); border-radius:16px;
+      width:min(720px,95vw);
+      background:var(--card);
+      border-radius:16px;
       box-shadow:0 8px 24px rgba(0,0,0,.08);
-      padding:20px; text-align:center;
+      padding:20px;
+      text-align:center;
     }
     h1{ margin:8px 0 10px; }
     .stats{ display:flex; justify-content:space-around; margin:8px 0 16px; }
@@ -42,8 +54,9 @@
       flex:1; border:0; border-radius:12px; padding:14px 16px;
       font-size:18px; font-weight:800; cursor:pointer;
     }
+    button:focus{ outline:none; }
     .yes{ background:#e9f7ed; color:#0a7a3f; }
-    .no{  background:#ffe9e9; color:#b00020; }
+    .no { background:#ffe9e9; color:#b00020; }
     .start{ background:#1a73e8; color:#fff; margin-top:12px; width:100%; }
     .tip{ margin-top:10px; color:var(--muted); font-size:14px; }
     .disabled{ opacity:.5; pointer-events:none; }
@@ -51,7 +64,7 @@
 </head>
 <body>
   <div class="app">
-    <h1>顏色配對（公平版）</h1>
+    <h1>顏色配對（穩定版）</h1>
     <div class="stats">
       <div class="pill">時間：<span id="time">60</span>s</div>
       <div class="pill">分數：<span id="score">0</span></div>
@@ -72,16 +85,28 @@
   </div>
 
 <script>
-  // —— 顏色（不含黃色）——
+  /* —— 0) 設置穩定視口高度，避免地址欄收起/展開引起躍動 —— */
+  function setVH() {
+    // 取實際可視高度（包含 iOS 安全區適配）
+    const h = Math.max(window.innerHeight, document.documentElement.clientHeight);
+    document.documentElement.style.setProperty('--vh', h + 'px');
+    window.scrollTo(0,0);
+  }
+  setVH();
+  window.addEventListener('resize', setVH);
+  window.addEventListener('orientationchange', setVH);
+
+  /* —— 1) 顏色資料（無黃色） —— */
   const WORDS = ['紅色','藍色','綠色','黑色','紫色','橙色'];
   const keyFromText = { '紅色':'red','藍色':'blue','綠色':'green','黑色':'black','紫色':'purple','橙色':'orange' };
   const colorKeys = Object.values(keyFromText);
   const cssMap = { red:'red', blue:'royalblue', green:'seagreen', black:'#111', purple:'rebeccapurple', orange:'orange' };
 
+  /* —— 2) 狀態 —— */
   let running=false, score=0, round=0, timeLeft=60, timer=null;
   let correctAnswer=null, matchCount=0, mismatchCount=0;
 
-  // DOM
+  /* —— 3) DOM —— */
   const wordEl  = document.getElementById('word');
   const timeEl  = document.getElementById('time');
   const scoreEl = document.getElementById('score');
@@ -94,7 +119,7 @@
   const revMap = Object.fromEntries(Object.entries(keyFromText).map(([cn,en]) => [en, cn]));
   const enablePlay = en => [btnYes, btnNo].forEach(b => b.classList.toggle('disabled', !en));
 
-  // 50/50 決策
+  /* —— 4) 50/50 決策 —— */
   function nextShouldMatch(){
     if (matchCount > mismatchCount) return false;
     if (mismatchCount > matchCount) return true;
@@ -151,17 +176,17 @@
   btnYes.addEventListener('click', () => answer(true));
   btnNo .addEventListener('click', () => answer(false));
 
-  // —— 防縮放（雙擊/手勢）——
+  /* —— 5) 防縮放與滾動（多重保險）—— */
   let lastTouchEnd = 0;
   document.addEventListener('touchend', e => {
     const now = Date.now();
-    if (now - lastTouchEnd <= 300) e.preventDefault();
+    if (now - lastTouchEnd <= 300) e.preventDefault();  // 禁雙擊放大
     lastTouchEnd = now;
   }, {passive:false});
   document.addEventListener('dblclick', e => e.preventDefault(), {passive:false});
-  document.addEventListener('gesturestart', e => e.preventDefault());
+  document.addEventListener('gesturestart', e => e.preventDefault()); // 禁兩指縮放
 
-  // —— 多重保險：鎖定滾動與回彈 —— //
+  // 完全禁止滾動/回彈
   window.scrollTo(0,0);
   window.addEventListener('scroll', () => window.scrollTo(0,0), {passive:false});
   document.addEventListener('touchmove', e => e.preventDefault(), {passive:false});
